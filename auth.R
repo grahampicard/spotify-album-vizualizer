@@ -1,0 +1,4 @@
+#### Keep these hidden ####
+
+client_id     <- "6094ae25b1c940beb2fdbebddb495f75"
+client_secret <-"3b07e96365af4feb97f79accff9ff5ae"
