@@ -1,71 +1,79 @@
 shinyServer(
+
   function(input, output, session) {
          
    	observeEvent(input$run,{
-       
-  	  #extract artist from text input
-  		album_df <- rgraph
+      
+   	  if (input$artist == "") {
+   	    return(NULL)
+   	  }
+   	  
+   	  artist <- get_artist(input$artist)
+   	  albums <- get_albums(artist$artist_id)
+   	  
+   	  if (is.null(albums$album) == FALSE) {
+   	    updateSelectInput(session, "album", choices = as.vector(albums$album))
+   	    updateSelectInput(session, "var", choices = c("Energy","Duration",
+   	      "Danceability","Loudness","Acousticness","Instrumentalness",
+   	      "Liveness","Valence","Tempo"), selected = "Energy")   	    
+   	  }
+   	})
+   	  
+  	current_album <- reactive({
+  	  validate(
+  	    need(input$album != "", label = "Artist")
+  	  )
+  	  
+	    album <- albums %>% 
+	             filter(album == input$album) %>% 
+	             select(album_id) %>% 
+	             unlist(use.names = FALSE) %>%
+	             get_tracks() %>% 
+	             add_track_info() %>% 
+	             graph_df()
+  	})  
   		
-  		output$gantt_type <- renderText({
-  		  paste(input$var)
-  		})
-  		
-  		output$hist <- renderPlot({
-  		  
-  		  gdf <- album_df %>%
-      		    select_("track", input$var)
-  		  
-  		  ggplot(data = gdf) + 
-  		    aes_string("track", input$var) + 
-  		    geom_bar(stat = 'identity') + 
-  		    coord_flip() +
-  		    scale_x_discrete(limits = rev(gdf$track)) +
-  		    theme(panel.background = element_blank(),
-  		          plot.background = element_blank(),
-  		          legend.title = element_blank(),
-  		          # legend.text = element_text(color="#555555", size = 12),
-  		          legend.background = element_blank(),
-  		          legend.key = element_blank(),
-  		          axis.title.x = element_blank(),
-  		          axis.title.y = element_blank(),
-  		          axis.ticks.x = element_blank(),
-  		          axis.ticks.y = element_blank(),
-  		          axis.text.y = element_text(size = 12),
-  		          axis.text.x = element_text(size = 10),  		          
-  		          panel.grid.major.x = element_blank(),
-  		          panel.grid.minor.x = element_blank(),
-  		          panel.grid.major.y = element_blank(),
-  		          panel.grid.minor.y = element_blank()
-  		    )
-  		  
-   	  }, bg = "transparent"
-		  )
+		output$graph_title <- renderText({
+		  if(input$album == "") {
+		    return("Enter an Artist")  	    
+		  }		  
+		  return(paste0(input$var, " on '", input$album, "'"))
+		})
+		
+		output$selected_feature <- renderText({
+		  if(input$var == "Getting Started") {
+		    return(input$var)  	    
+		  }	
+		  return(paste0("What is ", input$var, "?"))
+		})
+		
+		output$feature_description <- renderText({
+		  selected_label <- labels %>%
+		    filter(Feature == input$var) %>%
+		    select(Description)
+		  
+		  return(toString(selected_label[[1]]))
+		})
+		
+		output$hist <- rCharts::renderChart2({
+		 
+		  track_df <- current_album() %>% 
+		         filter(measure == input$var)
+		  
+		  opt_margin <- max(stri_length(track_df$track)) * 7
+
+		  p3 <- nPlot(Value ~ track, data = track_df, type = 'multiBarHorizontalChart')
+		  p3$chart(showControls = F, 
+		           showLegend = F,
+               color = c('#1ED760', '#1ED760'),
+		           margin = list(left = opt_margin),
+               tooltipContent = "#! function(key, x, y){ 
+                 return 'Song: ' + x + '  Value: ' + y 
+            		   } !#")
+		  p3$params$width <- 500
+		  p3
  	  })
   }
 )
   		
   		
-  # 		#hit apis to gather tracks
-  #     tracks<-try(getAlbumsTracks(getArtistsAlbums(getArtists(artist))), silent=TRUE)
-  #     
-  #     #if the above has errored return error message
-  # 		if(inherits(tracks, "try-error")){
-  # 		  
-  # 		    output$artist<-renderText(paste0("Artist Error: ", artist))
-  # 		    session$sendCustomMessage(type="jsondata","")
-  # 		  
-  # 		    } else {
-  # 		  
-  # 		    #else process the data  
-  # 		    output$artist<-renderText(paste0("Discography: ", tracks$artist[1]))
-  #   		  #format data
-  #   		  json<-jsonNestedData(structure=tracks[,c(1,3,5)], values=tracks[,9], top_label="Discography")
-  #     		var_json<-json$json
-  #     		#push data into d3script
-  #     		session$sendCustomMessage(type="jsondata",var_json)
-  # 		}
-  # 
-  # 		})
-  # 
-  #   }
-  # )

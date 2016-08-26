@@ -1,17 +1,23 @@
-library(shiny)
 library(shinydashboard)
+library(rjson)
 library(httr)
 library(dplyr)
 library(tidyr)
-library(ggplot2)
-library(plotly)
-source("auth.R")
+library(rCharts)
+library(stringi)
+
+## Authorizations
+credentials <- fromJSON(file = "www/credentials.json")
+
+## Call in labels for features
+labels <- readRDS("feature-labels")
+
 
 #### Authentication ####
 response = POST(
   'https://accounts.spotify.com/api/token',
   accept_json(),
-  authenticate(client_id, client_secret),
+  authenticate(credentials$client_id, credentials$client_secret),
   body = list(grant_type = 'client_credentials'),
   encode = 'form',
   verbose()
@@ -19,8 +25,6 @@ response = POST(
 
 mytoken     <- content(response)$access_token
 HeaderValue <- paste0('Bearer ', mytoken)
-
-
 
 
 #### Artist Info ####
@@ -140,15 +144,13 @@ graph_df <- function(track_info_df) {
                    track = as.character(track),
                    end_time = cumsum(Duration),
                    start_time = end_time - Duration) %>%
-            arrange(track_number)
+            arrange(track_number) %>%
+            select(track, track_number, Danceability, Energy, Loudness, Speechineses, 
+                   Acousticness, Instrumentalness, Liveness, Valence, 
+                   Tempo, Duration) %>%
+            mutate(track = ifelse(stri_length(track) > 21, 
+                                  paste0(substr(track, 1, 18),"..."),
+                                  track)) %>%  
+            gather(measure, Value, -track)
   return(graph)  
 }
-
- 
-
-## Test Artist for development
-# artist <- get_artist("Radiohead")
-# albums <- get_albums(artist$artist_id)
-# tracks <- get_tracks("1DBkJIEoeHrTX4WCBQGcCi")
-info   <- readRDS("kol-info")
-rgraph <- readRDS("kol-graph-df")
