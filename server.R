@@ -1,6 +1,24 @@
 shinyServer(
 
   function(input, output, session) {
+    
+    
+    artist <- reactive({
+      if (input$artist == "") {
+        return(NULL)
+      }
+      
+      get_artist(input$artist)
+    })
+
+    albums <- reactive({
+      if (input$artist == "") {
+        return(NULL)
+      }
+      
+      get_albums(artist()$artist_id)
+    })
+    
          
    	observeEvent(input$run,{
       
@@ -8,23 +26,24 @@ shinyServer(
    	    return(NULL)
    	  }
    	  
-   	  artist <- get_artist(input$artist)
-   	  albums <- get_albums(artist$artist_id)
-   	  
+   	  artist()
+   	  albums <- albums()
+   	
    	  if (is.null(albums$album) == FALSE) {
    	    updateSelectInput(session, "album", choices = as.vector(albums$album))
    	    updateSelectInput(session, "var", choices = c("Energy","Duration",
    	      "Danceability","Loudness","Acousticness","Instrumentalness",
-   	      "Liveness","Valence","Tempo"), selected = "Energy")   	    
+   	      "Liveness","Valence","Tempo"), selected = "Energy")
+   	    
    	  }
    	})
-   	  
+   	
   	current_album <- reactive({
   	  validate(
   	    need(input$album != "", label = "Artist")
   	  )
   	  
-	    album <- albums %>% 
+	    album <- albums() %>% 
 	             filter(album == input$album) %>% 
 	             select(album_id) %>% 
 	             unlist(use.names = FALSE) %>%
@@ -48,6 +67,7 @@ shinyServer(
 		})
 		
 		output$feature_description <- renderText({
+		    
 		  selected_label <- labels %>%
 		    filter(Feature == input$var) %>%
 		    select(Description)

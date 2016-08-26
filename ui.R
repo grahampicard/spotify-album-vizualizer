@@ -36,7 +36,8 @@ album    <- tabItem(
       ),
     column(width = 12, align = 'center',
       br(),
-      p("All descriptions taken from the ", tags$a(href = "https://developer.spotify.com/web-api/get-several-audio-features/" , "Spotify API Documentation."))
+      p("All descriptions taken from the ", tags$a(href = "https://developer.spotify.com/web-api/get-several-audio-features/" , "Spotify API Documentation.")),
+      p("Created by ", tags$a(href = "https://github.com/grahampicard", "Graham Picard"))
     )
   )
 )
