@@ -12,7 +12,6 @@ credentials <- fromJSON(file = "www/credentials.json")
 ## Call in labels for features
 labels <- readRDS("feature-labels")
 
-
 #### Authentication ####
 response = POST(
   'https://accounts.spotify.com/api/token',
@@ -110,20 +109,20 @@ add_track_info <- function(tracks_df) {
     
     temp <- data.frame(
       track_id         = tracks_df[i,3],
-      Danceability     = info$danceability,
-      Energy           = info$energy,
-      Key              = info$key,
-      Loudness         = info$loudness,
-      Speechineses     = info$speechiness,
-      Acousticness     = info$acousticness,
-      Instrumentalness = info$instrumentalness,
-      Liveness         = info$liveness,
-      Valence          = info$valence,
-      Tempo            = info$tempo
+      Danceability     = ifelse(is.null(info$danceability),0,info$danceability),
+      Energy           = ifelse(is.null(info$energy),0,info$energy),
+      Key              = ifelse(is.null(info$key),0,info$key),
+      Loudness         = ifelse(is.null(info$loudness),0,info$loudness),
+      Speechineses     = ifelse(is.null(info$speechiness),0,info$speechiness),
+      Acousticness     = ifelse(is.null(info$acousticness),0,info$acousticness),
+      Instrumentalness = ifelse(is.null(info$instrumentalness),0,info$instrumentalness),
+      Liveness         = ifelse(is.null(info$liveness),0,info$liveness),
+      Valence          = ifelse(is.null(info$valence),0,info$valence),
+      Tempo            = ifelse(is.null(info$tempo),0,info$tempo)
     )
     track_info <- rbind(track_info, temp)
   }
-  tracks_df <- tracks_df %>% left_join(track_info, by = c("track_id"))
+  tracks_df <- tracks_df %>% inner_join(track_info, by = c("track_id"))
   
   return(tracks_df)
 }
@@ -148,9 +147,9 @@ graph_df <- function(track_info_df) {
             select(track, track_number, Danceability, Energy, Loudness, Speechineses, 
                    Acousticness, Instrumentalness, Liveness, Valence, 
                    Tempo, Duration) %>%
-            mutate(track = ifelse(stri_length(track) > 21, 
-                                  paste0(substr(track, 1, 18),"..."),
-                                  track)) %>%  
+            mutate(track = ifelse(stri_length(track) > 18, 
+                                  paste0(track_number, " - ", substr(track, 1, 15),"..."),
+                                  paste0(track_number, " - ", track))) %>%  
             gather(measure, Value, -track)
   return(graph)  
 }
